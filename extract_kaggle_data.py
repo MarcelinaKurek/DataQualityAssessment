@@ -1,5 +1,5 @@
-import os
 import kaggle
+import os
 import zipfile
 
 
@@ -28,5 +28,5 @@ def download_kaggle_dataset(filename, directory="dataset_download"):
     os.remove(f"{fullpath}.zip")
 
 
-datasets_list = view_kaggle_datasets("classification")
-download_kaggle_dataset(datasets_list[3], directory="test")
+datasets_list = view_kaggle_datasets("stock")
+download_kaggle_dataset(datasets_list[3], directory="kaggle_datasets")

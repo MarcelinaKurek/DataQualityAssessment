@@ -1,5 +1,5 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import re
 
 
@@ -11,7 +11,7 @@ def read_data(filepath):
             df.drop('Unnamed: 0', axis=1, inplace=True)
         return df
     else:
-        raise Exception("File type not supported")
+        raise ValueError("File type not supported")
 
 
 def check_and_correct_types(df):
@@ -30,6 +30,9 @@ def check_if_datetime(df, types_dict):
         pattern2 = r"\b\d{4}[-/.]\d{1,2}[-/.]\d{1,2}(?:\s\d{2}:\d{2}:\d{2})?\b"
         valid_idx = df[column].first_valid_index()
         if bool(re.match(pattern1, df[column][valid_idx])) or bool(re.match(pattern2, df[column][valid_idx])):
-            df[column] = pd.to_datetime(df[column])
-            types_dict[column] = np.dtype('datetime64[ns]')
+            try:
+                df[column] = pd.to_datetime(df[column])
+                types_dict[column] = np.dtype('datetime64[ns]')
+            except:
+                raise ValueError("Datetime format might not be consistent")
     return df, types_dict
