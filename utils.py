@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 import re
 
 
@@ -17,13 +18,14 @@ def read_data(filepath):
 def check_and_correct_types(df):
     """Function to check and correct data types"""
     types_dict = dict(zip(df.columns, df.dtypes))
-    df, types_dict = check_if_datetime(df, types_dict)
-    return df
+    df, types_dict, not_consistent = check_if_datetime(df, types_dict)
+    return df, not_consistent
 
 
 def check_if_datetime(df, types_dict):
     """Function to check if an object column is possibly a datetime format"""
     categorical_columns = df.select_dtypes(include=['object']).columns.tolist()
+    not_consistent = False
     for column in categorical_columns:
         pd_date_pattern = r"\b\d{2}[-/]\d{2}[-/]\d{4}\b"
         pattern1 = r"\b\d{1,2}[-/.]\d{1,2}[-/.]\d{4}(?:\s\d{2}:\d{2}:\d{2})?\b"
@@ -34,5 +36,21 @@ def check_if_datetime(df, types_dict):
                 df[column] = pd.to_datetime(df[column])
                 types_dict[column] = np.dtype('datetime64[ns]')
             except:
-                raise ValueError("Datetime format might not be consistent")
-    return df, types_dict
+                df[column] = pd.to_datetime(df[column], errors='coerce')
+                not_consistent = True
+                # raise ValueError("Datetime format might not be consistent")
+    return df, types_dict, not_consistent
+
+
+def make_necessary_folders(data_path):
+    """
+    Function prepares necessary folders for data check results
+    :param data_path: Path to dataset
+    :return:
+    """
+    filepath = data_path.split(".")[0]
+    filepath_0 = '/'.join(filepath.split("/")[1:])
+    folder_name = f"results/{filepath_0}/tables"
+    if not os.path.exists(f"{folder_name}"):
+        os.makedirs(f"{folder_name}")
+    return folder_name

@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 import os
 import pandas as pd
@@ -6,25 +7,28 @@ import requests
 import torch
 import warnings
 
-from sklearn.metrics.pairwise import cosine_similarity
 from transformers import BertTokenizer, BertModel
+
+from utils import make_necessary_folders
 
 class LanguageWarning(Warning):
     pass
 
 class LanguageValidator:
-    def __init__(self, data):
+    def __init__(self, data, data_path, visualizer, linter_count, linters_dict):
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
         self.model = BertModel.from_pretrained('bert-base-uncased')
-        self.data = np.array(data.reset_index())
+        self.data = np.array(data['Names'].reset_index())
+        self.categories_count = data['Categories nr']
         self.vocab = self.tokenizer.get_vocab()
         self.abbr_df = self.load_abbreviations()
         self.result_df = None
+        self.nr_categories = np.array(data['Categories nr'])
+        self.result_path = make_necessary_folders(data_path)
+        self.visualizer = visualizer
+        self.linter_count = linter_count
+        self.linters_dict = linters_dict
 
-    # @staticmethod
-    # def print_dict(result_dict):
-    #     for key, value in result_dict.items():
-    #         print(f"{key}: {'; '.join(value)}")
 
     def regex_check(self, values_list, pat):
         """
@@ -32,29 +36,29 @@ class LanguageValidator:
         :param categories_df: dataframe containing categories
         :return: dictionary with potentially suspicious names
         """
-        susp_values_list = []
+        special_characters = []
         for entry in values_list:
-            if re.findall(f'[{pat}]', entry):
-                susp_values_list.append(entry)
-        return susp_values_list
+            if re.search(pat, entry):
+                special_characters.append(re.findall(pat, entry))
+        return list(itertools.chain(*special_characters))
 
-    def generate_embeddings(self, values_list):
-        """
-        Function to generate embeddings using BERT model
-        :param values_list: list of distinct values from a column
-        :return: dictionary with embeddings
-        """
-        embeddings = []
-        for entry in values_list:
-            entry = entry.replace('-', ' ').replace('_', ' ')
-            tokens = self.tokenizer(entry, return_tensors='pt')
-            with torch.no_grad():
-                output = self.model(**tokens)
-                embedding = output.last_hidden_state[:, 0, :]  # CLS token embedding
-            embeddings.append(embedding.squeeze().numpy())
-        embeddings = np.array(embeddings)
-        embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
-        return embeddings
+    # def generate_embeddings(self, values_list):
+    #     """
+    #     Function to generate embeddings using BERT model
+    #     :param values_list: list of distinct values from a column
+    #     :return: dictionary with embeddings
+    #     """
+    #     embeddings = []
+    #     for entry in values_list:
+    #         entry = entry.replace('-', ' ').replace('_', ' ')
+    #         tokens = self.tokenizer(entry, return_tensors='pt')
+    #         with torch.no_grad():
+    #             output = self.model(**tokens)
+    #             embedding = output.last_hidden_state[:, 0, :]  # CLS token embedding
+    #         embeddings.append(embedding.squeeze().numpy())
+    #     embeddings = np.array(embeddings)
+    #     embeddings = embeddings / np.linalg.norm(embeddings, axis=1, keepdims=True)
+    #     return embeddings
 
     def check_oov(self):
         """
@@ -70,7 +74,7 @@ class LanguageValidator:
         for i in range(len(self.data)):
             values_list = self.data[i][1]
             for entry in values_list:
-                entry = re.sub(r'[^a-zA-Z0-9]', ' ', entry)
+                entry = re.sub(r'[^a-zA-Z]', ' ', entry) #letters only
                 tokenized = self.tokenizer.tokenize(entry)
                 #find tokens which start with ## as they indicate part of unknown word
                 unknown_tokens = list(map(lambda x: x.startswith('##') and x not in lemma_tokens, tokenized))
@@ -93,34 +97,41 @@ class LanguageValidator:
             oov_tokens = []
         return pd.DataFrame(oov_df, columns=['words', 'oov_words', 'oov_tokens'], index=self.data[:,0])
 
-    def invalid_characters_check(self):
+    def special_characters_check(self):
         errors_df = []
         for i in range(len(self.data)):
             values_list = self.data[i][1]
-            potential_errors = self.regex_check(values_list, pat=r"$#*?:;!")
-            errors_df.append(potential_errors)
-        return pd.DataFrame(errors_df, index=self.data[:,0], columns=['Invalid Values']) if errors_df != [[]] else None
+            potential_errors = self.regex_check(values_list, pat=r"[^a-zA-Z\d+\s_-]")
+            nums = self.regex_check(values_list, pat=r"\d+")
+            errors_df.append([np.unique(potential_errors) if potential_errors != [] else None,
+                              np.sort(np.unique(nums).astype(int)).astype(str) if nums != [] else None])
+        return pd.DataFrame(errors_df, index=self.data[:,0], columns=['Special Characters', 'Numbers'])
 
     def abbreviations_check(self, values_df):
         abbreviations_df = []
         found_abbreviations = []
         not_abbreviations = []
         not_abbreviations_full_tokens = []
+        full_words = []
         abbr_list = self.abbr_df['abbreviation'].tolist()
+        full_list = self.abbr_df['word'].tolist()
         abbr_list = list(map(lambda x: x.lower().replace('.', '').split(' ')[0], abbr_list))
         for i in range(len(values_df)):
             values_list = values_df.iloc[i, 1]
             for j in range(len(values_list)):
                 if values_list[j] not in abbr_list:
                     not_abbreviations.append(values_list[j])
-                    not_abbreviations_full_tokens.append(values_df.iloc[i][2][j])
+                    not_abbreviations_full_tokens.append(values_df.iloc[i,2][j])
                 else:
                     found_abbreviations.append(values_list[j])
+                    idx = abbr_list.index(values_list[j])
+                    full_words.append(full_list[idx])
             abbreviations_df.append([found_abbreviations if found_abbreviations != [] else None,
+                                     full_words if full_words != [] else None,
                                      not_abbreviations if not_abbreviations != [] else None,
                                      not_abbreviations_full_tokens if not_abbreviations_full_tokens != [] else None])
-            found_abbreviations, not_abbreviations, not_abbreviations_full_tokens = [], [], []
-        return pd.DataFrame(abbreviations_df, index=self.data[:,0], columns=['Abbreviation', 'Out of Vocabulary', 'OOV Full Entries'])
+            found_abbreviations, not_abbreviations, not_abbreviations_full_tokens, full_words = [], [], [], []
+        return pd.DataFrame(abbreviations_df, index=self.data[:,0], columns=['Abbreviation', 'Full Word', 'Out of Vocabulary', 'OOV Full Entries'])
 
     def load_abbreviations(self):
         if not os.path.exists("abbreviations.txt"):
@@ -137,49 +148,69 @@ class LanguageValidator:
         print("Abbreviations successfully loaded")
         return df
 
-    def run_language_validator(self):
+    def run_language_validator(self, save_summary=True):
         """
         Function to perform language validation.
         :return:
         """
         print("\nRunning language validator...")
-        invalid_characters = self.invalid_characters_check()
+        invalid_characters = self.special_characters_check()
         oov_df = self.check_oov()
         abbreviations_df = self.abbreviations_check(oov_df)
+        merged_df = pd.merge(invalid_characters, abbreviations_df, left_index=True, right_index=True)
+        all_none = merged_df.isna().all(axis=1)
+        affected_columns = set(self.data[~all_none, 0])
+        columns_max_10_categories = set(self.categories_count.loc[self.categories_count <= 10].index)
+        columns_10_20_categories = set(self.categories_count.loc[(self.categories_count > 10) & (self.categories_count <= 20)].index)
+        affected_max_10_categories = list(affected_columns & columns_max_10_categories)
+        affected_10_20_categories = list(affected_columns & columns_10_20_categories)
+        self.visualizer.plot_categories_count(affected_max_10_categories)
+        self.visualizer.plot_categories_count(affected_10_20_categories, horizontal=True)
 
-        if invalid_characters is not None:
-            invalid_dict = invalid_characters.dropna().to_dict()['Invalid Values']
-            warnings.warn("Invalid values found in columns: "+", ".join(f"{key}: {value}" for key, value in invalid_dict.items()),
-                          category=LanguageWarning, stacklevel=5)
-        if list(abbreviations_df.loc[:,'Abbreviation']) != [[]]:
-            abb_df = abbreviations_df.loc[:,'Abbreviation'].dropna()
-            warnings.warn(f"Out of vocabulary words that might be abbreviations:\n{abb_df}",
-                          category=LanguageWarning, stacklevel=5)
+        if save_summary:
+            merged_df.to_csv(f"{self.result_path}/language_summary_df.csv")
+            print(f"Summary table saved to {self.result_path}/language_summary_df.csv")
+        self.print_warnings(abbreviations_df, invalid_characters)
+        print("\nLanguage validator successfully completed")
+
+    def print_warnings(self, abbreviations_df, invalid_characters):
+        self.print_invalid_characters_warnings(invalid_characters, 'Special Characters', 'Special characters detected', "lang_special_chars")
+        self.print_invalid_characters_warnings(invalid_characters, 'Numbers', 'Numbers detected', "lang_numeric_vals")
+
+        if any(abbreviations_df.loc[:,'Abbreviation']):
+            abb_df = abbreviations_df.loc[:,['Abbreviation', 'Full Word']].dropna()
+            warnings.warn(f"Out of vocabulary words that might be abbreviations detected",
+                          category=LanguageWarning, stacklevel=7)
+            self.linter_count[self.linters_dict["lang_abbr"]] += len(abb_df)
+            print("\nDetected abbreviations out of vocabulary:")
+            for x, y, z in zip(abb_df.index, abb_df['Abbreviation'], abb_df['Full Word']):
+                print(f"{x}: {', '.join(y)} ({', '.join(z)})")
+
         if list(abbreviations_df['Out of Vocabulary']) != [[]]:
+            oov_list_len = np.array(abbreviations_df['Out of Vocabulary'].apply(lambda x: len(x) if x is not None else 0.001))
             oov_df = abbreviations_df['Out of Vocabulary'].dropna()
-            warnings.warn(f"Out of vocabulary words that might be invalid:\n{oov_df}",
-                          category=LanguageWarning, stacklevel=5)
-        print("Language validator successfully completed")
+            custom_values_idx = np.where((oov_list_len / self.nr_categories > 0.50))[0]
+            if len(custom_values_idx) != 0:
+                custom_columns = self.data[:,0][custom_values_idx]
+                warnings.warn(f"Columns with high percentage of out of vocabulary values detected: {', '.join(custom_columns)}", category=LanguageWarning, stacklevel=5)
+                self.linter_count[self.linters_dict["lang_oov_custom"]] += len(custom_columns)
+            if len(oov_df) - len(custom_values_idx) != 0:
+                warnings.warn(f"Out of vocabulary words that might be invalid detected",
+                              category=LanguageWarning, stacklevel=6)
+                self.linter_count[self.linters_dict["lang_oov_invalid"]] += len(oov_df) - len(custom_values_idx)
+                print("\nPotentially invalid values:")
+                for x, y in zip(oov_df.index, oov_df):
+                    print(f"{x}: {', '.join(y)}")
 
-        # abbreviations_df['Invalid Values'] = invalid_characters['Invalid Values']
-        # abbreviations_df = abbreviations_df.drop(columns=['Abbreviation'], axis=1)
-        # new_order = ['Invalid Values', 'Out of Vocabulary', 'OOV Full Entries']
-        # abbreviations_df = abbreviations_df[new_order]
-        # abbreviations_df['OOV Full Entries'] = abbreviations_df['OOV Full Entries'].apply(lambda x: '; '.join(x))
-        # abbreviations_df['Out of Vocabulary'] = abbreviations_df['Out of Vocabulary'].apply(lambda x: '; '.join(x))
-        # print(abbreviations_df.reset_index().to_latex(index=False, na_rep='', label="Adult_result_table", caption='Abbreviations'))
-        # categories_embeddings = self.generate_embeddings(self.data[:,0])
-        # cnt = 0
-        # for i in self.data[:,0]:
-        #     values_list = oov_df.loc[i, 'words']
-        #     if values_list != []:
-        #         values_embeddings = self.generate_embeddings(oov_df.loc[i, 'words'])
-        #         cosine_similarity_category_name = cosine_similarity([categories_embeddings[cnt]], values_embeddings)[0]
-        #         not_similar_to_category_name = np.where(cosine_similarity_category_name < 0.75)[0]
-        #         if len(not_similar_to_category_name) != 0:
-        #             print(f"Words potentially not matching a category {i}:", end=' ')
-        #             print(np.array(values_list)[not_similar_to_category_name])
-        #     cnt += 1
+    def print_invalid_characters_warnings(self, invalid_characters, col, mess, dict_label):
+        if len(invalid_characters.loc[:,col].dropna()) != 0:
+            invalid_df = invalid_characters[col].dropna()
+            warnings.warn(f"{mess}", category=LanguageWarning, stacklevel=7)
+            self.linter_count[self.linters_dict[dict_label]] += len(invalid_df)
+            print(f"\n{mess}:")
+            for x, y in zip(invalid_df.index, invalid_df):
+                print(f"{x}: {', '.join(y)}")
+
 
 
 
