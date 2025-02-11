@@ -1,0 +1,25 @@
+Preprocessing for outlier detection started...
+Preprocessing done in 0.02 seconds
+One hot encoded columns: []
+Standard scaled columns: ['PRICE', 'BEDS', 'BATH', 'PROPERTYSQFT', 'LATITUDE', 'LONGITUDE']
+
+Calculating Z-score started...
+Calculating Z-score finished in 0.0 seconds
+
+Running K-Nearest Neighbors...
+KNN outlier ratio: 1.00% (48 outliers found)
+Running K-Nearest Neighbor done in 0.07 seconds
+
+Running Isolation Forest started...
+Isolation Forest outlier ratio: 1.00% (48 outliers found)
+Running Isolation Forest finished in 0.24 seconds
+
+Running Local Outlier Factor...
+Local outlier factor outlier ratio: 1.00% (48 outliers found)
+Running Local Outlier Factor done in 0.1 seconds 
+
+Running DBSCAN...
+{'eps': 1.5, 'min_samples': 6}
+DBSACAN outlier ratio: 1.02% (49 outliers found)
+Running DBSCAN done in 0.47 seconds
+Summary table saved to results/new-york-housing-market/NY-House-Dataset/tables/outlier_summary_df.csv

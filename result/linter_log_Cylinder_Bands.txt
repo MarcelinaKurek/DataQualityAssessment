@@ -1,0 +1,63 @@
+Cylinder_Bands
+
+Running categorical validator...
+Categorical columns: ['timestamp', 'cylinder number', 'customer', 'grain screened', 'ink color', 'proof on ctd ink', 'blade mfg', 'cylinder division', 'paper type', 'ink type', 'direct steam', 'solvent type', 'type on cylinder', 'press type', 'cylinder size', 'paper mill location', 'caliper', 'band type']
+Column(s) with missing values: cylinder number : 1 (0.00%), grain screened : 49 (0.09%), proof on ctd ink : 57 (0.11%), blade mfg : 60 (0.11%), ink type : 1 (0.00%), direct steam : 25 (0.05%), solvent type : 56 (0.10%), type on cylinder : 19 (0.04%), press type : 1 (0.00%), cylinder size : 4 (0.01%), paper mill location : 157 (0.29%), caliper : 28 (0.05%), band type : 2 (0.00%)
+Categorical summary statistics saved to results/Cylinder_Bands/data/tables/categorical_summary_df.csv.
+Abbreviations successfully loaded
+
+Running language validator...
+Summary table saved to results/Cylinder_Bands/data/tables/language_summary_df.csv
+
+Special characters detected:
+ink color: . (0.200)
+cylinder division: . (0.8125)
+cylinder size: . (0.7)
+caliper: . (0.2, 0.3, 0.233)
+
+Numbers detected:
+timestamp: 296 numbers (19900710, 19901209, 19900606)
+cylinder number: 434 numbers (X129, M254, R6)
+customer: 1910.0 (1910)
+grain screened: 45.0 (45)
+ink color: 0.2 (0.200)
+proof on ctd ink: 17.0 (17)
+blade mfg: 84.0 (84)
+cylinder division: 0.8125 (0.8125)
+paper type: 27.0 (27)
+direct steam: 1865.0 (1865)
+press type: 70.0, 94.0 (Motter94, WoodHoe70, Albert70)
+cylinder size: 0.7 (0.7)
+caliper: 0.133, 0.167, 0.2, 0.2, 0.217, 0.233, 0.25, 0.267, 0.283, 0.3, 0.3, 0.333, 0.35, 0.367, 0.4, 0.433, 0.467, 0.5, 0.533, 200.0 (0.2, 0.3, 0.233)
+
+Potentially invalid values:
+customer: modmat, kmart, tvguide, toysrus, walmart, sheplers, bestprod, woolworth, eckerd, childcraft, austads, eckerds, uscav, guideposts, colortile, dunns, hanoverhouse, jcp, belk, homeshop, natlwil, jamesway, lurias, mervyns, cvs, competitivedge, servmer, casliving, brendls, abbeypress, hanoverhse, casualliving, belks, burdines, hanovrh, colortil, woolwrth, abbypress, jcpenny, cenpur, hanhouse, exxon, campingworld, childworld, oldvillages, homeshopping, colorfulimage, jfk, galls, globalequ, penney, kidsrus, adco, ntlwil, yieldhouse
+blade mfg: uddehol
+cylinder division: gallatin
+paper type: uncoated
+ink type: uncoated
+solvent type: xylol, naptha
+press type: motter, woodhoe
+cylinder size: spiegel
+paper mill location: northus, mideurope, scandanavian, southus
+band type: noband
+
+Language validator successfully completed
+Running categorical validator finished in 1.94 seconds
+
+Running numeric validator...
+Column(s) with missing values: job number : 1 (0.00%), press : 1 (0.00%), plating tank : 19 (0.04%), proof cut : 55 (0.10%), viscosity : 6 (0.01%), ink temperature : 4 (0.01%), humidity : 3 (0.01%), roughness : 32 (0.06%), blade pressure : 65 (0.12%), varnish pct : 57 (0.11%), press speed : 12 (0.02%), ink pct : 57 (0.11%), solvent pct : 57 (0.11%), esa voltage : 58 (0.11%), esa amperage : 56 (0.10%), wax : 8 (0.01%), hardener : 9 (0.02%), roller durometer : 56 (0.10%), current density : 9 (0.02%), anode space ratio : 9 (0.02%), chrome content : 5 (0.01%)
+Numeric columns: ['job number', 'press', 'unit number', 'plating tank', 'proof cut', 'viscosity', 'ink temperature', 'humidity', 'roughness', 'blade pressure', 'varnish pct', 'press speed', 'ink pct', 'solvent pct', 'esa voltage', 'esa amperage', 'wax', 'hardener', 'roller durometer', 'current density', 'anode space ratio', 'chrome content']
+sys:1: LanguageWarning: Special characters detected
+sys:1: LanguageWarning: Numbers detected
+sys:1: LanguageWarning: Columns with high percentage of out of vocabulary values detected: customer, blade mfg, cylinder division, solvent type, press type, paper mill location, band type
+sys:1: LanguageWarning: Out of vocabulary words that might be invalid detected
+Numeric summary statistics saved to results/Cylinder_Bands/data/tables/numeric_summary_df.csv.
+sys:1: NumericValuesWarning: Columns with mode below 10%th quantile: unit number
+sys:1: NumericValuesWarning: Columns with mode below 1%th quantile: plating tank, esa voltage, esa amperage
+sys:1: NumericValuesWarning: Columns with mode below 5%th quantile: chrome content
+sys:1: NumericValuesWarning: Columns with mode above 90%th quantile: esa amperage, current density, chrome content
+sys:1: NumericValuesWarning: Skewed columns: job number, plating tank, esa voltage, esa amperage, chrome content
+sys:1: NumericValuesWarning: Columns with wide data range: job number, plating tank, proof cut, ink temperature, roughness, blade pressure, solvent pct, esa voltage, esa amperage, wax, hardener, current density, chrome content
+sys:1: NumericValuesWarning: Columns with high row difference between two following sorted elements: job number, press, plating tank, proof cut, viscosity, ink temperature, blade pressure, varnish pct, press speed, solvent pct, esa voltage, esa amperage, roller durometer, current density, anode space ratio, chrome content
+Running numeric validator finished in 1.88 seconds.

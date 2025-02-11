@@ -1,0 +1,53 @@
+Adult
+
+Running categorical validator...
+Categorical columns: ['workclass', 'education', 'marital-status', 'occupation', 'relationship', 'race', 'sex', 'native-country', 'income']
+Column(s) with missing values: workclass : 963 (0.02%), occupation : 966 (0.02%), native-country : 274 (0.01%)
+Duplicated rows: 33305 (0.68%)
+Categorical summary statistics saved to results/Adult/data/tables/categorical_summary_df.csv.
+Abbreviations successfully loaded
+
+Running language validator...
+Summary table saved to results/Adult/data/tables/language_summary_df.csv
+
+Special characters detected:
+workclass: ? (?)
+occupation: ? (?)
+native-country: &, (, ), ? (?, Trinadad&Tobago, Outlying-US(Guam-USVI-etc))
+income: ., <, =, > (<=50K, <=50K., >50K)
+
+Numbers detected:
+education: -8.0, -6.0, -4.0, 1.0, 5.0, 7.0, 9.0, 10.0, 11.0, 12.0 (11th, 10th, 7th-8th)
+income: 50.0 (<=50K, <=50K., >50K)
+
+Detected abbreviations out of vocabulary:
+education: assoc, voc (association, vocabulary)
+marital-status: civ (civil law)
+occupation: exec, adm, priv (execution, admiral, privative)
+race: amer (America, American)
+
+Potentially invalid values:
+workclass: emp
+education: grad, bachelors, acdm
+occupation: inspct, handlers, cleaners, serv
+race: eskimo
+native-country: trinadad, usvi, holand
+
+Language validator successfully completed
+Running categorical validator finished in 1.85 seconds
+
+Running numeric validator...
+Numeric columns: ['age', 'fnlwgt', 'education-num', 'capital-gain', 'capital-loss', 'hours-per-week']
+sys:1: LanguageWarning: Special characters detected
+sys:1: LanguageWarning: Numbers detected
+sys:1: LanguageWarning: Out of vocabulary words that might be abbreviations detected
+sys:1: LanguageWarning: Columns with high percentage of out of vocabulary values detected: occupation
+sys:1: LanguageWarning: Out of vocabulary words that might be invalid detected
+Numeric summary statistics saved to results/Adult/data/tables/numeric_summary_df.csv.
+sys:1: NumericValuesWarning: Columns with mode below 1%th quantile: capital-gain, capital-loss
+sys:1: NumericValuesWarning: Columns with mode above 90%th quantile: capital-gain, capital-loss
+sys:1: NumericValuesWarning: Skewed columns: capital-gain, capital-loss
+sys:1: NumericValuesWarning: Columns with wide data range: fnlwgt, capital-gain, capital-loss, hours-per-week
+sys:1: NumericValuesWarning: Columns with high row difference between two following sorted elements: capital-gain, capital-loss
+sys:1: NumericValuesWarning: Columns with modal value occurrence less than 1%: fnlwgt
+Running numeric validator finished in 0.39 seconds.
