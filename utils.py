@@ -7,7 +7,7 @@ import re
 def read_data(filepath):
     """Function to read data from file in csv format"""
     if filepath.lower().endswith("csv"):
-        df = pd.read_csv(filepath)
+        df = pd.read_csv(filepath, low_memory=False)
         if 'Unnamed: 0' in df.columns:
             df.drop('Unnamed: 0', axis=1, inplace=True)
         return df
@@ -46,7 +46,7 @@ def make_necessary_folders(data_path):
     """
     Function prepares necessary folders for data check results
     :param data_path: Path to dataset
-    :return:
+    :return: name of the created directory
     """
     filepath = data_path.split(".")[0]
     filepath_0 = '/'.join(filepath.split("/")[1:])
